@@ -1,42 +1,28 @@
-import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
 import {
-  ActionFunctionArgs,
-  Form,
-  Outlet,
-  redirect,
-  useActionData,
-  useLocation,
+  LoaderFunctionArgs,
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
 } from "react-router";
+import { ActionFunctionArgs, Form, Outlet, redirect } from "react-router";
+import { FormError } from "./Error";
+
+export async function loadUsername({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const relative = url.pathname + url.search + url.hash;
+
+  const resp = await fetch("/api/me", { credentials: "include" });
+  if (!resp.ok) {
+    return redirect(relative == "/" ? "/login" : `/login?next=${relative}`);
+  }
+
+  const data = await resp.json();
+  return data.username;
+}
 
 export function LoginRequired() {
-  const [username, setUsername] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
+  const username = useLoaderData() as string;
   const navigate = useNavigate();
-
-  useEffect(() => {
-    (async () => {
-      const resp = await fetch("/api/me", { credentials: "include" });
-      if (resp.ok) {
-        const data = await resp.json();
-        setUsername(data.username);
-      }
-      setLoading(false);
-    })();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  if (username == null) {
-    return (
-      <Navigate
-        to="/login"
-        state={{ from: location.pathname + location.search + location.hash }}
-      />
-    );
-  }
 
   async function handleLogout() {
     await fetch("/api/logout", {
@@ -57,10 +43,9 @@ export function LoginRequired() {
   );
 }
 
-export function Login() {
-  const actionData = useActionData();
-  const location = useLocation();
-  const to = location.state?.from || "/";
+export default function Login() {
+  const [searchParams] = useSearchParams();
+  const to = searchParams.get("next") || "/";
 
   return (
     <>
@@ -72,7 +57,7 @@ export function Login() {
         </div>
         <input type="hidden" name="to" value={to} />
         <button type="submit">Login</button>
-        {actionData?.error && <div>{actionData.error}</div>}
+        <FormError />
       </Form>
     </>
   );
