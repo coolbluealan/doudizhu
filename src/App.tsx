@@ -1,4 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { ErrorBoundary } from "./Error";
+import Game, { loadGame } from "./Game";
 import Home, { joinAction } from "./Home";
 import Login, {
   authMiddleware,
@@ -7,8 +9,6 @@ import Login, {
   LoginRequired,
   logoutAction,
 } from "./Login";
-import Game, { loadGame } from "./Game";
-import { ErrorBoundary } from "./Error";
 import "./global.css";
 
 const router = createBrowserRouter([

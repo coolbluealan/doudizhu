@@ -1,10 +1,15 @@
-import { useEffect, useState, createContext } from "react";
-import { GameContextType, LobbyState, Msg, ServerMsg } from "./types";
+import { createContext, useEffect, useState } from "react";
+import {
+  Form,
+  LoaderFunctionArgs,
+  useLoaderData,
+  useParams,
+} from "react-router";
+import { fetchJson, FormError } from "./Error";
 import Chat from "./Chat";
 import Hand from "./Hand";
-import { Form, useLoaderData, useParams } from "react-router";
-import { LoaderFunctionArgs } from "react-router";
-import { fetchJson, FormError } from "./Error";
+import SuitDefs from "./SuitDefs";
+import { GameContextType, LobbyState, Msg, ServerMsg } from "./types";
 
 export const GameContext = createContext<GameContextType>({
   status: "Lobby",
@@ -55,6 +60,7 @@ export default function Game() {
           <FormError />
         </Form>
       )}
+      <SuitDefs />
       <Hand hand={[0, 5, 10, 15, 24, 29, 34, 39, 44, 49, 52, 53]} />
       <Chat initial={initialMessages} />
     </GameContext.Provider>

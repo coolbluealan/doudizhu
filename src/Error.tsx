@@ -9,7 +9,7 @@ export async function fetchJson(url: string, options: RequestInit = {}) {
       status: resp.status,
       statusText: resp.statusText,
       msg: data.msg || "Unknown error",
-    }) as AppError;
+    }) satisfies AppError;
 
   return resp
     .json()
