@@ -1,42 +1,53 @@
 import {
   LoaderFunctionArgs,
+  unstable_createContext,
+  unstable_MiddlewareFunction,
+  unstable_RouterContextProvider,
   useLoaderData,
-  useNavigate,
   useSearchParams,
 } from "react-router";
 import { ActionFunctionArgs, Form, Outlet, redirect } from "react-router";
 import { FormError } from "./Error";
 
-export async function loadUsername({ request }: LoaderFunctionArgs) {
+// empty string means logged out
+const userContext = unstable_createContext<string>("");
+
+export const authMiddleware: unstable_MiddlewareFunction = async ({
+  request,
+  context,
+}) => {
+  // already authenticated
+  if (context.get(userContext)) {
+    return;
+  }
+
   const url = new URL(request.url);
   const relative = url.pathname + url.search + url.hash;
 
   const resp = await fetch("/api/me", { credentials: "include" });
   if (!resp.ok) {
-    return redirect(relative == "/" ? "/login" : `/login?next=${relative}`);
+    throw redirect(relative == "/" ? "/login" : `/login?next=${relative}`);
   }
 
-  const data = await resp.json();
-  return data.username;
+  const json = await resp.json();
+  context.set(userContext, json.username);
+};
+
+export function loadUser({
+  context,
+}: LoaderFunctionArgs<unstable_RouterContextProvider>) {
+  return context.get(userContext);
 }
 
 export function LoginRequired() {
-  const username = useLoaderData() as string;
-  const navigate = useNavigate();
-
-  async function handleLogout() {
-    await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-    return navigate("/login");
-  }
-
+  const user = useLoaderData() as string;
   return (
     <>
       <nav>
-        {username}
-        <button onClick={handleLogout}>Logout</button>
+        {user}
+        <Form action="/logout" method="POST">
+          <button type="submit">Logout</button>
+        </Form>
       </nav>
       <Outlet />
     </>
@@ -84,4 +95,15 @@ export async function loginAction({ request }: ActionFunctionArgs) {
   }
 
   return redirect(to);
+}
+
+export async function logoutAction({
+  context,
+}: LoaderFunctionArgs<unstable_RouterContextProvider>) {
+  context.set(userContext, "");
+  await fetch("/api/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+  return redirect("/login");
 }

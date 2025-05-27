@@ -359,9 +359,9 @@ impl Game {
 
         game.insert("turn".to_string(), Value::from(self.turn));
         game.insert("bid".to_string(), Value::from(self.bid));
-        game.insert("mult".to_string(), Value::from(self.mult));
 
         if self.playing {
+            game.insert("mult".to_string(), Value::from(self.mult));
             game.insert("landlord".to_string(), Value::from(self.landlord));
             game.insert("bonus".to_string(), self.serialize_cards(3));
         }

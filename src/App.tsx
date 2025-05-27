@@ -1,8 +1,15 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Home, { joinAction } from "./Home";
-import Login, { loadUsername, loginAction, LoginRequired } from "./Login";
+import Login, {
+  authMiddleware,
+  loadUser,
+  loginAction,
+  LoginRequired,
+  logoutAction,
+} from "./Login";
 import Game, { loadGame } from "./Game";
 import { ErrorBoundary } from "./Error";
+import "./global.css";
 
 const router = createBrowserRouter([
   {
@@ -14,8 +21,13 @@ const router = createBrowserRouter([
         element: <Login />,
       },
       {
+        path: "/logout",
+        action: logoutAction,
+      },
+      {
         element: <LoginRequired />,
-        loader: loadUsername,
+        unstable_middleware: [authMiddleware],
+        loader: loadUser,
         children: [
           {
             path: "/",

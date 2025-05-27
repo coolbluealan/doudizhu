@@ -1,0 +1,8 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(225,150,150)">
+    <rect x="100" y="100" width="150" height="150"/>
+    <circle cx="100" cy="175" r="75"/>
+    <circle cx="175" cy="100" r="75"/>
+  </g>
+  <path d="M 150 150 Q 150 250, 100 300 H 200 Q 150 250, 150 150"/>
+</svg>

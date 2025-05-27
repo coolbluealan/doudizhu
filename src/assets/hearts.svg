@@ -1,0 +1,7 @@
+<svg viewBox="0 0 300 300" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(45 150 150)">
+    <rect x="80" y="80" height="175" width="175"/>
+    <circle cx="80" cy="167.5" r="87.5"/>
+    <circle cx="167.5" cy="80" r="87.5"/>
+  </g>
+</svg>

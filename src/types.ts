@@ -19,7 +19,7 @@ export type ServerMsg = { Chat: Msg } | { State: LobbyState };
 export type GameState = {
   turn: number;
   bid: number;
-  mult: number;
+  mult?: number;
   landlord?: number;
   bonus?: number[];
   winner?: number;
@@ -39,7 +39,5 @@ export type LobbyState = {
 };
 
 export type GameContextType = LobbyState & {
-  messages: Msg[];
-  setMessages: React.Dispatch<React.SetStateAction<Msg[]>>;
-  sendMessage: (msg: String) => boolean;
+  socket: WebSocket | null;
 };
