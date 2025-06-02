@@ -1,5 +1,6 @@
 import "./login.css";
 
+import { useEffect } from "react";
 import { Form, useSearchParams } from "react-router";
 
 import FormError from "@/FormError";
@@ -7,6 +8,10 @@ import FormError from "@/FormError";
 export default function Login() {
   const [searchParams] = useSearchParams();
   const to = searchParams.get("next") || "/";
+
+  useEffect(() => {
+    document.title = "Login";
+  }, []);
 
   return (
     <div className="center-container">

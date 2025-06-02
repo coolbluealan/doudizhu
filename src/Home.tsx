@@ -1,5 +1,6 @@
 import "./home.css";
 
+import { useEffect } from "react";
 import { Form, useNavigate } from "react-router";
 
 import fetchJson from "./fetchJson";
@@ -9,6 +10,10 @@ import useUser from "./login/UserContext";
 export default function Home() {
   const user = useUser();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Home";
+  }, []);
 
   async function handleCreate() {
     const { lobbyCode } = await fetchJson("/api/create", {
