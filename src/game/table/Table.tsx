@@ -87,7 +87,7 @@ function Player({ pos }: PlayerProps) {
       </div>
       {game && (
         <div
-          className={`cards-left medium${
+          className={`cards-left${
             game.cards_left[i] < 8
               ? " cards-" + (game.cards_left[i] > 0 ? "low" : "zero")
               : ""

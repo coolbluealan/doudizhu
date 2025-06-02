@@ -84,21 +84,24 @@ function Actions({ selected, clearHand }: ActionsProps) {
   }
 
   const notTurn = idx != game?.turn;
-  const startGame = (
-    <button
-      className="btn-primary"
-      onClick={() =>
-        socket?.send(JSON.stringify({ Start: null } satisfies ClientMsg))
-      }
-    >
-      Start Game
-    </button>
-  );
+
+  function startBtn(text: string) {
+    return (
+      <button
+        className="btn-primary"
+        onClick={() =>
+          socket?.send(JSON.stringify({ Start: null } satisfies ClientMsg))
+        }
+      >
+        {text}
+      </button>
+    );
+  }
 
   let actions;
   if (status == "Lobby") {
     if (players.length == 3) {
-      actions = startGame;
+      actions = startBtn("Start Game");
     }
   } else if (status == "Bidding") {
     function bid(val: number) {
@@ -151,7 +154,7 @@ function Actions({ selected, clearHand }: ActionsProps) {
       </>
     );
   } else {
-    actions = startGame;
+    actions = startBtn("Play Again");
   }
 
   return (
