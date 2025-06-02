@@ -4,9 +4,11 @@ export type AppError = {
   msg: string;
 };
 
-export type Cards = number[];
-
-export type ClientMsg = { Chat: string } | { Move: Cards };
+export type ClientMsg =
+  | { Chat: string }
+  | { Start: null }
+  | { Bid: number }
+  | { Play: number[] };
 
 export type Msg = {
   text: string;
@@ -14,12 +16,22 @@ export type Msg = {
   time: number;
 };
 
-export type ServerMsg = { Chat: Msg } | { State: LobbyState };
+export type ServerMsg =
+  | { Chat: Msg }
+  | { State: LobbyState }
+  | { Error: string };
 
 export type GameState = {
   turn: number;
   bid: number;
-  mult?: number;
+  mult: number;
+  passes: number;
+  cards_left: number[];
+  last_idx: number;
+  last_play?: {
+    kind: string;
+    cards: number[];
+  };
   landlord?: number;
   bonus?: number[];
   winner?: number;
@@ -31,9 +43,9 @@ export type Player = {
 };
 
 export type LobbyState = {
-  status: string;
+  status: "Lobby" | "Bidding" | "Playing" | "Finished";
   players: Player[];
-  idx: number | null;
+  idx?: number;
   hand?: number[];
   game?: GameState;
 };

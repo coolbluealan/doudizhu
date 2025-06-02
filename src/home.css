@@ -1,0 +1,23 @@
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem;
+  background: var(--mantle);
+}
+
+.title {
+  background: linear-gradient(120deg, var(--sky), var(--yellow), var(--pink));
+  background-clip: text;
+  color: transparent;
+  font-size: 3rem;
+}
+
+.separator {
+  margin-block: 2rem;
+}
+
+.create-btn {
+  width: 100%;
+  height: 3rem;
+}

@@ -14,7 +14,9 @@ use crate::{AppError, User};
 #[derive(Debug, Deserialize)]
 pub enum ClientMsg {
     Chat(String),
-    Move(Hand),
+    Start,
+    Bid(usize),
+    Play(Hand),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -69,14 +71,18 @@ impl Lobby {
         self.users.get(&user.id).copied()
     }
 
+    fn current_name(&self) -> &str {
+        &self.players[self.game.turn()].name
+    }
+
     pub fn join(&mut self, user: &User) -> Result<(), AppError> {
         // check whether possible to join
         if self.users.contains_key(&user.id) {
-            return Err("Already joined the lobby".into());
+            return Err("already joined the lobby".into());
         }
         let idx = self.players.len();
         if idx >= 3 {
-            return Err("Lobby is full".into());
+            return Err("lobby is full".into());
         }
 
         // add the user
@@ -85,33 +91,80 @@ impl Lobby {
             name: user.username.clone(),
             score: 0,
         });
+        self.send_msg(3, format!("{} joined the game.", user.username));
 
-        if idx == 2 {
-            self.status = Status::Bidding;
+        self.send_state();
+        Ok(())
+    }
+
+    pub fn start(&mut self) -> Result<(), AppError> {
+        match self.status {
+            Status::Lobby => {
+                if self.players.len() < 3 {
+                    return Err("not enough players".into());
+                }
+            }
+            Status::Bidding | Status::Playing => return Err("game in progress".into()),
+            Status::Finished => {
+                self.game = Game::new();
+            }
         }
-        self.send_msg(3, format!("{} joined the game", user.username));
+        self.status = Status::Bidding;
+        self.send_msg(
+            3,
+            format!("Game started. {} begins the bidding.", self.current_name()),
+        );
         self.send_state();
         Ok(())
     }
 
     pub fn bid(&mut self, idx: usize, val: usize) -> Result<(), AppError> {
-        self.game.bid(idx, val).map_err(AppError)?;
-        if self.game.playing() {
-            self.status = Status::Playing;
+        if self.game.bid(idx, val).map_err(AppError)? {
+            self.game = Game::new();
             self.send_msg(
                 3,
                 format!(
-                    "{} is the landlord!",
-                    self.players[self.game.landlord()].name
+                    "No one bid. Redealing cards. {} begins the bidding.",
+                    self.current_name(),
                 ),
             );
+        } else {
+            self.send_msg(
+                3,
+                format!(
+                    "{} {}.",
+                    self.players[idx].name,
+                    match val {
+                        0 => "passed".to_string(),
+                        _ => format!("bid {}", val),
+                    },
+                ),
+            );
+            if self.game.playing() {
+                self.status = Status::Playing;
+                self.send_msg(
+                    3,
+                    format!(
+                        "{} is the landlord! Bonus cards: {}",
+                        self.players[self.game.landlord()].name,
+                        self.game.landlord_bonus(),
+                    ),
+                );
+            }
         }
         self.send_state();
         Ok(())
     }
 
     pub fn play(&mut self, idx: usize, hand: Hand) -> Result<(), AppError> {
+        let action = if hand.is_pass() {
+            "passed".to_string()
+        } else {
+            format!("played {}", hand.join_cards())
+        };
         self.game.play(idx, hand).map_err(AppError)?;
+        self.send_msg(3, format!("{} {}.", self.players[idx].name, action));
+
         if let Some(winner) = self.game.winner() {
             self.send_msg(
                 3,
@@ -126,7 +179,7 @@ impl Lobby {
                 msg = format!(
                     "The landlord wins +{}. Peasants lose -{}.",
                     2 * delta,
-                    delta
+                    delta,
                 );
             } else {
                 msg = format!("Peasants win +{}. The landlord loses {}.", delta, 2 * delta);
@@ -199,13 +252,11 @@ impl Lobby {
         Value::Object(lobby)
     }
 
-    pub fn serialize_idx(&self, mut state: Value, idx: Option<usize>) -> Value {
-        if let Some(idx) = idx {
-            if self.status != Status::Lobby {
-                state["hand"] = self.game.serialize_cards(idx);
-            }
-        }
+    pub fn serialize_idx(&self, mut state: Value, idx: usize) -> Value {
         state["idx"] = Value::from(idx);
+        if self.status != Status::Lobby {
+            state["hand"] = self.game.serialize_cards(idx);
+        }
         state
     }
 

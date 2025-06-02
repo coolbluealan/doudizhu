@@ -1,19 +1,20 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
-import { ErrorBoundary } from "./Error";
-import Game, { loadGame } from "./Game";
-import Home, { joinAction } from "./Home";
-import Login, {
-  authMiddleware,
-  loadUser,
-  loginAction,
-  LoginRequired,
-  logoutAction,
-} from "./Login";
-import "./global.css";
+
+import ErrorBoundary from "./ErrorBoundary";
+import Game from "./game/Game";
+import { joinAction } from "./game/joinAction";
+import { loadGame } from "./game/loadGame";
+import Home from "./Home";
+import authMiddleware from "./login/authMiddleware";
+import loadUser from "./login/loadUser";
+import Login from "./login/Login";
+import { loginAction, logoutAction } from "./login/userActions";
+import UserLayout from "./login/UserLayout";
 
 const router = createBrowserRouter([
   {
     errorElement: <ErrorBoundary />,
+    HydrateFallback: () => null,
     children: [
       {
         path: "/login",
@@ -25,9 +26,9 @@ const router = createBrowserRouter([
         action: logoutAction,
       },
       {
-        element: <LoginRequired />,
         unstable_middleware: [authMiddleware],
         loader: loadUser,
+        element: <UserLayout />,
         children: [
           {
             path: "/",

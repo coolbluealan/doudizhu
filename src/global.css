@@ -54,9 +54,101 @@
   --crust-rgb: 17 17 27;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background-color: var(--base);
+  margin: 0;
+  background: var(--base);
+  background-image: url(@/assets/bg-pattern.svg);
+  background-size: 5rem;
   color: var(--text);
   font-family: "Inter", sans-serif;
-  font-display: swap;
+}
+
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  border: none;
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--overlay2);
+  font-weight: 700;
+  font-size: inherit;
+  color: var(--crust);
+  cursor: pointer;
+}
+button:disabled {
+  background: var(--surface0);
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--blue);
+}
+.btn-primary:hover {
+  background: var(--sapphire);
+}
+.btn-primary:active {
+  background: var(--sky);
+}
+.btn-primary:disabled {
+  background: var(--surface0);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--rosewater);
+}
+.btn-secondary:hover {
+  background: var(--pink);
+}
+.btn-secondary:active {
+  background: var(--mauve);
+}
+.btn-secondary:disabled {
+  background: var(--surface0);
+  cursor: not-allowed;
+}
+
+input {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--overlay0);
+  background: var(--mantle);
+  font-size: 1rem;
+  color: var(--text);
+}
+input:focus {
+  outline: 2px solid var(--rosewater);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+.form-row > input {
+  flex: 1;
+}
+
+.medium {
+  font-weight: 500;
+}
+
+.center-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  padding: 3rem;
+  background: var(--surface0);
+  box-shadow: 0 0 1rem var(--crust);
+  font-size: 1.25rem;
 }

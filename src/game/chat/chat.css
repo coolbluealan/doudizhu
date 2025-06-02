@@ -1,0 +1,26 @@
+.game-chat {
+  grid-area: chat;
+  display: flex;
+  flex-direction: column;
+  width: 18rem;
+  margin: 2rem 2rem 0 0;
+}
+
+.messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+  border-radius: 1rem 1rem 0 0;
+  padding: 1rem 1.5rem;
+  background: rgb(var(--surface0-rgb) / 0.7);
+}
+
+.sentinel {
+  margin-top: -0.5rem;
+}
+
+.chat-input {
+  border-radius: 0 0 1rem 1rem;
+}

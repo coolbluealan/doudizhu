@@ -1,0 +1,87 @@
+.game-table {
+  grid-area: table;
+  place-self: center;
+  display: grid;
+  grid-template-areas:
+    "left center right"
+    ". bottom .";
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 1.5rem;
+}
+
+.table-player-0 {
+  grid-area: bottom;
+}
+.table-player-1 {
+  grid-area: right;
+}
+.table-player-2 {
+  grid-area: left;
+}
+
+.table-center {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 40vw;
+  min-height: 40vh;
+
+  border-radius: 1rem;
+  padding: 2rem;
+  background: linear-gradient(120deg, #115b7c, #15729b, #115b7c);
+  box-shadow: 0 0 1.5rem var(--crust);
+}
+
+.table-field {
+  align-self: center;
+}
+.table-field > .card:hover {
+  background: #eee; /* disable hover effect */
+}
+.table-emph {
+  align-self: end;
+}
+
+.player-name {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.indicator {
+  position: absolute;
+  left: -35px;
+  top: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translateY(-50%);
+}
+.turn-indicator {
+  fill: var(--teal);
+}
+.pass-indicator {
+  fill: var(--red);
+}
+.landlord-icon {
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  padding-inline: 0.2rem;
+  background: var(--base);
+  box-shadow: 0 0 0.5rem currentColor;
+  color: var(--yellow);
+  white-space: nowrap;
+}
+
+.cards-left {
+  margin-top: 0.5rem;
+}
+.cards-low {
+  color: var(--yellow);
+}
+.cards-zero {
+  color: var(--red);
+}

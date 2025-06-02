@@ -1,29 +1,13 @@
-import { ActionFunctionArgs, Form, redirect, useNavigate } from "react-router";
-import { fetchJson, FormError } from "./Error";
+import "./home.css";
 
-export async function joinAction({ request }: ActionFunctionArgs) {
-  const data = await request.formData();
-  const lobbyCode = (data.get("lobbyCode") as string).trim().toUpperCase();
+import { Form, useNavigate } from "react-router";
 
-  // validate username
-  if (!lobbyCode) {
-    return { error: "Lobby code cannot be empty" };
-  }
-
-  const resp = await fetch(`/api/lobby/${lobbyCode}/join`, {
-    method: "POST",
-    credentials: "include",
-  });
-
-  if (!resp.ok) {
-    const error = await resp.json();
-    return { error: error.msg || `Failed to join ${lobbyCode}` };
-  }
-
-  return redirect(`/lobby/${lobbyCode}`);
-}
+import fetchJson from "./fetchJson";
+import FormError from "./FormError";
+import useUser from "./login/UserContext";
 
 export default function Home() {
+  const user = useUser();
   const navigate = useNavigate();
 
   async function handleCreate() {
@@ -35,20 +19,49 @@ export default function Home() {
   }
 
   return (
-    <>
-      <h1>Welcome</h1>
-      <button onClick={handleCreate}>Create Lobby</button>
-      <Form method="POST">
-        <input
-          type="text"
-          name="lobbyCode"
-          maxLength={4}
-          placeholder="Enter four letter lobby code"
-          required
-        />
-        <button type="submit">Join</button>
-        <FormError />
-      </Form>
-    </>
+    <div className="page">
+      <nav>
+        <b>Your username: {user}</b>
+        <Form action="/logout" method="POST">
+          <button className="btn-secondary" type="submit">
+            Logout
+          </button>
+        </Form>
+      </nav>
+
+      <div className="center-container">
+        <h1>
+          <span className="title">Landlord / Doudizhu</span>
+        </h1>
+        <p>
+          Join an existing lobby or create a new lobby.
+          <br />
+          Learn about the game{" "}
+          <a href="https://en.wikipedia.org/wiki/Dou_dizhu">here</a>.
+        </p>
+        <Form method="POST">
+          <div className="form-row">
+            <input
+              type="text"
+              name="lobbyCode"
+              maxLength={4}
+              placeholder="Enter four letter lobby code"
+              required
+              onInput={(e) => {
+                e.currentTarget.value = e.currentTarget.value.toUpperCase();
+              }}
+            />
+            <button className="btn-primary" type="submit">
+              Join Lobby
+            </button>
+          </div>
+          <FormError />
+        </Form>
+        <hr className="separator" />
+        <button className="create-btn btn-primary" onClick={handleCreate}>
+          Create A New Lobby
+        </button>
+      </div>
+    </div>
   );
 }

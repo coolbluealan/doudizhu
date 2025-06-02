@@ -17,13 +17,16 @@ use axum_extra::extract::{
 use futures_util::StreamExt;
 use serde::Deserialize;
 use serde_json::json;
-use tower_http::services::ServeDir;
+use tower_http::{
+    compression::CompressionLayer,
+    services::{ServeDir, ServeFile},
+};
 use uuid::Uuid;
 
 mod app;
 mod game;
 mod lobby;
-use app::{AppError, AppState, LobbyIdx, LobbyRef, SendJson, User};
+use app::{AppError, AppState, LobbyIdx, LobbyRef, SendApp, User};
 use lobby::{ClientMsg, ServerMsg};
 
 #[shuttle_runtime::main]
@@ -47,7 +50,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     // serve built files
     let router = Router::new()
         .nest("/api", api_router)
-        .fallback_service(ServeDir::new("../dist"));
+        .fallback_service(ServeDir::new("../dist").fallback(ServeFile::new("../dist/index.html")))
+        .layer(CompressionLayer::new());
 
     Ok(router.into())
 }
@@ -63,7 +67,7 @@ async fn login(
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     // validate username
     if form.username.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Username cannot be empty"));
+        return Err((StatusCode::BAD_REQUEST, "username cannot be empty"));
     }
 
     let id = Uuid::new_v4();
@@ -99,7 +103,12 @@ async fn create_lobby(
 
 async fn lobby_state(LobbyIdx(lobby, idx): LobbyIdx) -> impl IntoResponse {
     let lobby_read = lobby.read().await;
-    Json(lobby_read.serialize_idx(lobby_read.serialize(), idx))
+    let state = lobby_read.serialize();
+    Json(if let Some(idx) = idx {
+        lobby_read.serialize_idx(state, idx)
+    } else {
+        state
+    })
 }
 
 async fn join_lobby(lobby: LobbyRef, user: User) -> Result<impl IntoResponse, AppError> {
@@ -149,13 +158,17 @@ async fn handle_socket(
                         Ok(ClientMsg::Chat(msg)) => {
                             lobby.write().await.send_msg(idx, msg);
                         }
-                        Ok(ClientMsg::Move(hand)) => {
-                            if let Err(e) = lobby.write().await.play(idx, hand) {
-                                sender.send_json(e).await?;
-                            }
+                        Ok(ClientMsg::Start) => {
+                            sender.send_result(lobby.write().await.start()).await?;
+                        }
+                        Ok(ClientMsg::Bid(val)) => {
+                            sender.send_result(lobby.write().await.bid(idx, val)).await?;
+                        }
+                        Ok(ClientMsg::Play(hand)) => {
+                            sender.send_result(lobby.write().await.play(idx, hand)).await?;
                         }
                         Err(e) => {
-                            sender.send_json(AppError(e.to_string())).await?;
+                            sender.send_result(Err(e)).await?;
                         }
                     },
                     _ => break,
@@ -167,7 +180,7 @@ async fn handle_socket(
                     .send_json(match msg {
                         ServerMsg::Chat(_) => msg,
                         ServerMsg::State(state) => {
-                            ServerMsg::State(lobby.read().await.serialize_idx(state, Some(idx)))
+                            ServerMsg::State(lobby.read().await.serialize_idx(state, idx))
                         }
                     })
                     .await?;

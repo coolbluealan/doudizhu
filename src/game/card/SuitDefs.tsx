@@ -1,7 +1,7 @@
-import ClubsSvg from "./assets/clubs.svg?react";
-import DiamondsSvg from "./assets/diamonds.svg?react";
-import HeartsSvg from "./assets/hearts.svg?react";
-import SpadesSvg from "./assets/spades.svg?react";
+import ClubsSvg from "@/assets/clubs.svg?react";
+import DiamondsSvg from "@/assets/diamonds.svg?react";
+import HeartsSvg from "@/assets/hearts.svg?react";
+import SpadesSvg from "@/assets/spades.svg?react";
 
 export default function SuitDefs() {
   return (

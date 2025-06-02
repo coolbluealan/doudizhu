@@ -14,6 +14,7 @@ use futures_util::{stream::SplitSink, SinkExt};
 use moka::future::Cache;
 use rand::{distr::Alphabetic, Rng};
 use serde::{ser::SerializeStruct, Serialize};
+use serde_json::json;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -105,7 +106,7 @@ impl FromRequestParts<AppState> for User {
             .ok_or(
                 (
                     StatusCode::UNAUTHORIZED,
-                    AppError::from("Missing session cookie"),
+                    AppError::from("missing session cookie"),
                 )
                     .into_response(),
             )?;
@@ -114,7 +115,7 @@ impl FromRequestParts<AppState> for User {
             (
                 StatusCode::FORBIDDEN,
                 jar.remove(Cookie::from("session")),
-                AppError::from("Invalid session cookie"),
+                AppError::from("invalid session cookie"),
             )
                 .into_response(),
         )?;
@@ -135,7 +136,7 @@ impl FromRequestParts<AppState> for LobbyRef {
             .map_err(|_| {
                 (
                     StatusCode::BAD_REQUEST,
-                    AppError::from("Missing lobby code in path"),
+                    AppError::from("missing lobby code in path"),
                 )
                     .into_response()
             })?;
@@ -143,7 +144,7 @@ impl FromRequestParts<AppState> for LobbyRef {
         let lobby = state.lobbies.get(&lobby_code).await.ok_or(
             (
                 StatusCode::NOT_FOUND,
-                AppError(format!("Lobby {} not found", lobby_code)),
+                AppError(format!("lobby {} not found", lobby_code)),
             )
                 .into_response(),
         )?;
@@ -168,13 +169,21 @@ impl FromRequestParts<AppState> for LobbyIdx {
     }
 }
 
-pub trait SendJson {
+pub trait SendApp {
     async fn send_json(&mut self, msg: impl Serialize) -> Result<(), Box<dyn Error>>;
+    async fn send_result(&mut self, e: Result<(), impl Error>) -> Result<(), Box<dyn Error>>;
 }
-impl SendJson for SplitSink<WebSocket, Message> {
+impl SendApp for SplitSink<WebSocket, Message> {
     async fn send_json(&mut self, msg: impl Serialize) -> Result<(), Box<dyn Error>> {
         let text = serde_json::to_string(&msg)?;
         self.send(Message::Text(text.into())).await?;
         Ok(())
+    }
+    async fn send_result(&mut self, error: Result<(), impl Error>) -> Result<(), Box<dyn Error>> {
+        if let Err(e) = error {
+            self.send_json(json!({ "Error": e.to_string() })).await
+        } else {
+            Ok(())
+        }
     }
 }

@@ -1,0 +1,41 @@
+.game {
+  display: grid;
+  grid-template-areas:
+    "info notification chat"
+    "info table chat"
+    "info hand actions";
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  gap: 2rem;
+  height: 100vh;
+  overflow: auto;
+}
+
+.game-notification {
+  grid-area: notification;
+  place-self: center;
+  margin-top: 2rem;
+}
+
+.player-0 {
+  color: var(--blue);
+}
+.player-1 {
+  color: var(--green);
+}
+.player-2 {
+  color: var(--red);
+}
+.player-3 {
+  color: var(--subtext0);
+}
+
+.hover-box {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(45deg, var(--surface0), var(--surface2));
+  box-shadow: 0 0 1.5rem var(--crust);
+}
+.hover-box.game-notification {
+  padding: 1rem;
+}

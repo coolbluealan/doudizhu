@@ -1,32 +1,38 @@
+use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
+
 use rand::seq::SliceRandom;
 use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::cmp::Ordering;
-use std::fmt::Display;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Card(usize);
+const SUIT_MAP: [&str; 4] = ["♣️", "♦️", "♥️", "♠️"];
+const RANK_MAP: [&str; 14] = [
+    "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "J",
+];
+#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct Card(usize);
 impl Card {
     fn rank(&self) -> usize {
         self.0 / 4
     }
 }
-impl PartialEq for Card {
-    fn eq(&self, other: &Self) -> bool {
-        self.rank() == other.rank()
+impl Display for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let suit = match self.0 {
+            52 => "🃟",
+            53 => "🃏",
+            _ => SUIT_MAP[self.0 % 4],
+        };
+        write!(f, "{}{}", RANK_MAP[self.rank()], suit)
     }
 }
-impl Eq for Card {}
-impl PartialOrd for Card {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Ord for Card {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.rank().cmp(&other.rank())
-    }
+pub fn join_cards(cards: &Vec<Card>) -> String {
+    cards
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
@@ -44,7 +50,7 @@ enum HandName {
     Rocket,
 }
 impl Display for HandName {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         let hand_name = match self {
             HandName::Pass => "Pass",
             HandName::Single => "Single",
@@ -79,7 +85,7 @@ impl Serialize for HandType {
         let name = self.name.to_string();
         serializer.serialize_str(
             &(if self.mult > 1 && self.name != HandName::Straight {
-                name + " Chain"
+                name + " Chained"
             } else {
                 name
             }),
@@ -87,7 +93,7 @@ impl Serialize for HandType {
     }
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Hand {
     kind: HandType,
     #[serde(skip)]
@@ -100,17 +106,16 @@ const HAND_PASS: Hand = Hand {
     cards: Vec::new(),
 };
 impl Hand {
-    fn new(cards: Vec<usize>) -> Result<Self, String> {
+    pub fn new(cards: Vec<Card>) -> Result<Self, String> {
         if cards.len() == 0 {
             return Ok(HAND_PASS);
         }
 
-        let cards: Vec<Card> = cards.iter().map(|c| Card(*c)).collect();
         // a normal user should not see these errors
         if !cards.iter().all(|c| c.0 < 54) {
             return Err("invalid cards".to_string());
         }
-        if !cards.windows(2).all(|w| w[0].0 < w[1].0) {
+        if !cards.is_sorted() {
             return Err("unsorted cards".to_string());
         }
 
@@ -182,15 +187,39 @@ impl Hand {
 
         Ok(Self {
             kind: hand_type,
-            sort_key: [
-                cnts[3].clone(),
-                cnts[2].clone(),
-                cnts[1].clone(),
-                cnts[0].clone(),
-            ]
-            .concat(),
+            sort_key: cnts
+                .iter()
+                .rev()
+                .flat_map(|v| v.iter().rev().copied())
+                .collect(),
             cards,
         })
+    }
+
+    pub fn is_pass(&self) -> bool {
+        self.kind.name == HandName::Pass
+    }
+
+    pub fn join_cards(&self) -> String {
+        join_cards(&self.cards)
+    }
+}
+impl PartialEq for Hand {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.sort_key == other.sort_key
+    }
+}
+impl Eq for Hand {}
+impl PartialOrd for Hand {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(&other))
+    }
+}
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.kind
+            .cmp(&other.kind)
+            .then(self.sort_key.cmp(&other.sort_key))
     }
 }
 impl<'de> Deserialize<'de> for Hand {
@@ -212,7 +241,7 @@ fn generate_random_hands() -> [Vec<Card>; 4] {
         deck,
     ]
     .map(|mut cards| {
-        cards.sort_by(|a, b| a.0.cmp(&b.0));
+        cards.sort();
         cards
     })
 }
@@ -221,9 +250,9 @@ pub struct Game {
     cards: [Vec<Card>; 4], // 4th element contains three hidden cards
     turn: usize,
     bid: usize,
-    playing: bool,
     mult: usize,
     landlord: usize,
+    last_idx: usize,
     last_play: Hand,
     passes: usize,
     winner: Option<usize>,
@@ -234,103 +263,121 @@ impl Game {
             cards: generate_random_hands(),
             turn: rand::random_range(..3),
             bid: 0,
-            playing: false,
             mult: 1,
-            landlord: 0,
+            landlord: 3,
             last_play: HAND_PASS,
+            last_idx: 0,
             passes: 0,
             winner: None,
         }
     }
 
     // getter functions
-    pub fn playing(&self) -> bool {
-        self.playing
-    }
     pub fn landlord(&self) -> usize {
         self.landlord
     }
-    pub fn winner(&self) -> Option<usize> {
-        self.winner
+    pub fn landlord_bonus(&self) -> String {
+        join_cards(&self.cards[3])
+    }
+    pub fn playing(&self) -> bool {
+        self.landlord != 3
     }
     pub fn score_delta(&self) -> usize {
         self.mult * self.bid
     }
+    pub fn turn(&self) -> usize {
+        self.turn
+    }
+    pub fn winner(&self) -> Option<usize> {
+        self.winner
+    }
 
-    pub fn bid(&mut self, idx: usize, val: usize) -> Result<(), String> {
+    // Ok(true) means redeal
+    pub fn bid(&mut self, idx: usize, val: usize) -> Result<bool, String> {
         // check phase
-        if self.playing {
-            return Err("Bidding is over".to_string());
+        if self.playing() {
+            return Err("bidding is over".to_string());
         }
         // check turn
         if self.turn != idx {
-            return Err("Not your turn".to_string());
+            return Err("not your turn".to_string());
         }
 
+        // bid of 0 denotes pass
         if val == 0 {
             self.passes += 1;
-            if self.passes == 2 {
-                self.passes = 0;
-                self.playing = true;
-            }
         } else {
             if val <= self.bid {
-                return Err("Must bid higher than previous bid".to_string());
+                return Err("must bid higher than previous bid".to_string());
             }
             self.passes = 0;
             self.bid = val;
-            self.landlord = idx;
-            if val == 3 {
-                self.playing = true;
-            }
+            self.last_idx = idx;
         }
-        Ok(())
+
+        // end bidding phase
+        if (self.passes == 2 && self.bid > 0) || self.bid == 3 {
+            self.passes = 0;
+            self.landlord = self.last_idx;
+            self.cards[self.landlord].extend(self.cards[3].clone());
+            self.cards[self.landlord].sort();
+            self.turn = self.landlord;
+        } else if self.passes == 3 {
+            // no one bid, so redeal
+            return Ok(true);
+        } else {
+            self.turn = (idx + 1) % 3;
+        }
+        Ok(false)
     }
 
     pub fn play(&mut self, idx: usize, hand: Hand) -> Result<(), String> {
         // check phase
-        if self.bid == 0 {
-            return Err("In bidding phase".to_string());
+        if !self.playing() {
+            return Err("still bidding".to_string());
+        }
+        if self.winner.is_some() {
+            return Err("game finished".to_string());
         }
         // check turn
         if self.turn != idx {
-            return Err("Not your turn".to_string());
+            return Err("not your turn".to_string());
         }
         // check hand exists in cards
-        if !hand.cards.iter().all(|c| self.cards[self.turn].contains(c)) {
-            return Err("Cards not in hand".to_string());
+        if !hand.cards.iter().all(|c| self.cards[idx].contains(c)) {
+            return Err("cards not in hand".to_string());
         }
 
         // check if hand id matches
         match hand.kind.name {
             HandName::Pass => {
-                // cannot pass thrice in a row
-                if self.passes == 2 {
-                    return Err("Cannot pass".to_string());
+                // cannot pass thrice in a row or on empty last_play
+                if self.last_play.is_pass() || self.passes == 2 {
+                    return Err("cannot pass".to_string());
                 }
             }
             HandName::Bomb | HandName::Rocket => {}
             _ => {
                 // hand ids must match
-                if self.last_play.kind != PASS && self.last_play.kind != hand.kind {
-                    return Err("Hand type does not match".to_string());
+                if !self.last_play.is_pass() && self.last_play.kind != hand.kind {
+                    return Err("hand type does not match".to_string());
                 }
             }
         }
-        // check if hand beats last_play
-        if hand <= self.last_play {
-            return Err("Must beat last hand".to_string());
-        }
 
-        if hand.kind != PASS {
+        if !hand.is_pass() {
+            // check if hand beats last_play
+            if hand <= self.last_play {
+                // big joker has same rank as small joker but beats it
+                if hand.cards[0].0 != 53 {
+                    return Err("must beat last hand".to_string());
+                }
+            }
+
             // remove cards
-            self.cards[self.turn] = self.cards[self.turn]
-                .iter()
-                .filter(|c| !hand.cards.contains(c))
-                .cloned()
-                .collect();
-            if self.cards.is_empty() {
-                self.winner = Some(self.turn);
+            self.cards[idx].retain(|c| !hand.cards.binary_search(c).is_ok());
+            if self.cards[idx].is_empty() {
+                self.winner = Some(idx);
             }
 
             // update game state
@@ -338,15 +385,17 @@ impl Game {
                 self.mult *= 2;
             }
             self.passes = 0;
+            self.last_idx = idx;
             self.last_play = hand;
         } else {
             self.passes += 1;
             if self.passes == 2 {
+                self.passes = 0;
                 self.last_play = HAND_PASS;
             }
         }
 
-        self.turn = (self.turn + 1) % 3;
+        self.turn = (idx + 1) % 3;
         Ok(())
     }
 
@@ -359,9 +408,19 @@ impl Game {
 
         game.insert("turn".to_string(), Value::from(self.turn));
         game.insert("bid".to_string(), Value::from(self.bid));
+        game.insert("mult".to_string(), Value::from(self.mult));
+        game.insert("passes".to_string(), Value::from(self.passes));
+        game.insert(
+            "cards_left".to_string(),
+            Value::from(self.cards[..3].iter().map(|c| c.len()).collect::<Vec<_>>()),
+        );
+        game.insert("last_idx".to_string(), Value::from(self.last_idx));
 
-        if self.playing {
-            game.insert("mult".to_string(), Value::from(self.mult));
+        if self.playing() {
+            game.insert(
+                "last_play".to_string(),
+                serde_json::to_value(&self.last_play).unwrap(),
+            );
             game.insert("landlord".to_string(), Value::from(self.landlord));
             game.insert("bonus".to_string(), self.serialize_cards(3));
         }
