@@ -50,7 +50,7 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     // serve built files
     let router = Router::new()
         .nest("/api", api_router)
-        .fallback_service(ServeDir::new("../dist").fallback(ServeFile::new("../dist/index.html")))
+        .fallback_service(ServeDir::new("dist").fallback(ServeFile::new("dist/index.html")))
         .layer(CompressionLayer::new());
 
     Ok(router.into())

@@ -8,6 +8,7 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig({
   plugins: [react(), svgr()],
   build: {
+    outDir: "API/dist",
     rollupOptions: {
       input: ["index.html"],
     },
