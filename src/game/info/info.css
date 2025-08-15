@@ -1,6 +1,6 @@
 .game-info {
   grid-area: info;
-  width: 18rem;
+  width: 20vw;
   padding: 2rem;
   background: rgb(var(--crust-rgb) / 0.7);
 }

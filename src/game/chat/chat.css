@@ -2,7 +2,7 @@
   grid-area: chat;
   display: flex;
   flex-direction: column;
-  width: 18rem;
+  width: 20vw;
   margin: 2rem 2rem 0 0;
 }
 
