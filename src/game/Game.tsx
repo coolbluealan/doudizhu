@@ -20,6 +20,7 @@ export default function Game() {
   const [lobbyState, setLobbyState] = useState(initialLobbyState);
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [error, setError] = useState("");
+  const [reconnect, setReconnect] = useState(false); // toggle to trigger reconnect
 
   // set state if the loader multiple times
   // this happens on the transition from spectator to user
@@ -34,22 +35,30 @@ export default function Game() {
       `${protocol}://${window.location.host}/api/lobby/${lobbyCode}/ws`,
     );
     setSocket(ws);
+    setError("");
 
     // handle game state update messages
-    ws.addEventListener("message", (e: MessageEvent) => {
+    ws.onmessage = (e: MessageEvent) => {
       const data: ServerMsg = JSON.parse(e.data);
       if ("State" in data) {
         setLobbyState(data.State);
-        setError("");
       } else if ("Error" in data) {
         setError(data.Error);
       }
-    });
+    };
+
+    // handle reconnection
+    ws.onclose = () => {
+      setTimeout(() => {
+        setError("reconnecting...");
+        setReconnect(!reconnect);
+      }, 1000);
+    };
 
     return () => {
       ws.close();
     };
-  }, [lobbyCode, lobbyState.idx]);
+  }, [lobbyCode, lobbyState.idx, reconnect]);
 
   // generate notification
   let msg;
