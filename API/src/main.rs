@@ -21,6 +21,7 @@ use tower_http::{
     compression::CompressionLayer,
     services::{ServeDir, ServeFile},
 };
+use tracing::info;
 use uuid::Uuid;
 
 mod app;
@@ -75,6 +76,7 @@ async fn login(
         return Err((StatusCode::BAD_REQUEST, "username cannot be empty"));
     }
 
+    info!(username = form.username, "login");
     let id = Uuid::new_v4();
     state.users.insert(id, form.username).await;
 
@@ -102,6 +104,8 @@ async fn create_lobby(
     user: User,
 ) -> Result<impl IntoResponse, AppError> {
     let (id, lobby) = state.create_lobby().await;
+    info!(id, "lobby created");
+
     lobby.write().await.join(&user)?;
     Ok(Json(json!({ "lobbyCode": id })))
 }
