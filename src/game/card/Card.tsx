@@ -4,16 +4,47 @@ import { MouseEventHandler } from "react";
 
 import joker from "@/assets/joker.png";
 
-import { color, rank, suit } from "./cardUtils";
+const rankMap = [
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "J",
+  "Q",
+  "K",
+  "A",
+  "2",
+  "J",
+];
+function rank(card: number) {
+  return rankMap[Math.floor(card / 4)];
+}
+
+const suitMap = ["clubs", "diamonds", "hearts", "spades"];
+function suit(card: number) {
+  if (card >= 52) return "joker";
+  return suitMap[card % 4];
+}
+
+const colorMap = ["black", "red", "red", "black"];
+function color(card: number) {
+  return colorMap[card % 4];
+}
 
 type CardProps = {
   card: number;
+  small?: boolean;
   selected?: boolean;
   onMouseDown?: () => void;
   onMouseEnter?: MouseEventHandler;
 };
 export default function Card({
   card,
+  small = false,
   selected = false,
   onMouseDown,
   onMouseEnter,
@@ -24,7 +55,11 @@ export default function Card({
 
   return (
     <div
-      className={`card card-${c}` + (selected ? " card-selected" : "")}
+      className={
+        `card card-${c}` +
+        (small ? " card-small" : "") +
+        (selected ? " card-selected" : "")
+      }
       onMouseDown={onMouseDown}
       onMouseEnter={onMouseEnter}
     >

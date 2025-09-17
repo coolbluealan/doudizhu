@@ -1,6 +1,6 @@
 import "./hand.css";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Form, useParams } from "react-router";
 
 import FormError from "@/FormError";
@@ -14,24 +14,14 @@ type HandProps = {
   hand: number[];
 };
 export default function Hand({ hand }: HandProps) {
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<boolean[]>(
+    new Array(hand.length).fill(false),
+  );
 
-  // clear selected cards that have been played
-  useEffect(() => {
-    const handSet = new Set(hand);
-    setSelected(
-      (prev) => new Set([...prev].filter((card) => handSet.has(card))),
-    );
-  }, [hand]);
-
-  function toggle(card: number) {
+  function toggle(i: number) {
     setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(card)) {
-        next.delete(card);
-      } else {
-        next.add(card);
-      }
+      const next = [...prev];
+      next[i] = !next[i];
       return next;
     });
   }
@@ -39,35 +29,41 @@ export default function Hand({ hand }: HandProps) {
   return (
     <>
       <div className="game-hand cards">
-        {hand.map((card) => (
+        {hand.map((card, i) => (
           <Card
-            key={card}
+            key={i}
             card={card}
-            selected={selected.has(card)}
-            onMouseDown={() => toggle(card)}
+            small={hand.length > 20}
+            selected={selected[i]}
+            onMouseDown={() => toggle(i)}
             onMouseEnter={(e) => {
-              if (e.buttons & 1) toggle(card);
+              if (e.buttons & 1) toggle(i);
             }}
           />
         ))}
       </div>
-      <Actions selected={selected} clearHand={() => setSelected(new Set())} />
+      <Actions
+        hand={hand}
+        selected={selected}
+        clearHand={() => setSelected(new Array(hand.length).fill(false))}
+      />
     </>
   );
 }
 
 type ActionsProps = {
-  selected: Set<number>;
+  hand: number[];
+  selected: boolean[];
   clearHand: () => void;
 };
-function Actions({ selected, clearHand }: ActionsProps) {
+function Actions({ hand, selected, clearHand }: ActionsProps) {
   const { lobbyCode } = useParams();
 
   const user = useUser();
   const { status, players, idx, game, socket } = useGame();
 
   if (idx == undefined) {
-    if (status == "Lobby" && players.length < 3) {
+    if (status == "Lobby" && players.length < 4) {
       return (
         <div className="game-actions">
           <Form action="/" method="POST">
@@ -100,7 +96,7 @@ function Actions({ selected, clearHand }: ActionsProps) {
 
   let actions;
   if (status == "Lobby") {
-    if (players.length == 3) {
+    if (players.length >= 3) {
       actions = startBtn("Start Game");
     }
   } else if (status == "Bidding") {
@@ -135,20 +131,25 @@ function Actions({ selected, clearHand }: ActionsProps) {
     );
   } else if (status == "Playing") {
     function play(cards: number[]) {
-      return () => {
-        socket?.send(JSON.stringify({ Play: cards } satisfies ClientMsg));
-      };
+      socket?.send(JSON.stringify({ Play: cards } satisfies ClientMsg));
     }
     actions = (
       <>
         <button
           className="btn-primary"
-          onClick={play(Array.from(selected).sort((a, b) => a - b))}
-          disabled={notTurn || selected.size == 0}
+          onClick={() => {
+            play(hand.filter((_, i) => selected[i]));
+            clearHand();
+          }}
+          disabled={notTurn || !selected.includes(true)}
         >
           Play
         </button>
-        <button className="btn-secondary" onClick={play([])} disabled={notTurn}>
+        <button
+          className="btn-secondary"
+          onClick={() => play([])}
+          disabled={notTurn}
+        >
           Pass
         </button>
       </>
@@ -160,7 +161,7 @@ function Actions({ selected, clearHand }: ActionsProps) {
   return (
     <div className="game-actions">
       {status == "Playing" && (
-        <button onClick={clearHand} disabled={selected.size == 0}>
+        <button onClick={clearHand} disabled={!selected.includes(true)}>
           Clear
         </button>
       )}

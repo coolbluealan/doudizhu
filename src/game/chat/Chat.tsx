@@ -123,7 +123,7 @@ export default function Chat({ initial }: ChatProps) {
         {messages.map(({ text, idx, time }) => (
           <div key={time}>
             <b className={`player-${idx}`}>
-              {idx == 3 ? "Game" : players[idx].name}:{" "}
+              {idx == 9 ? "Game" : players[idx].name}:{" "}
             </b>
             {text}
           </div>

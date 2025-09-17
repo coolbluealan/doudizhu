@@ -25,6 +25,7 @@ use tracing::info;
 use uuid::Uuid;
 
 mod app;
+mod card;
 mod game;
 mod lobby;
 use app::{AppError, AppState, LobbyIdx, LobbyRef, SendApp, User};

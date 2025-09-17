@@ -27,12 +27,15 @@
   color: var(--red);
 }
 .player-3 {
+  color: var(--yellow);
+}
+.player-9 {
   color: var(--subtext0);
 }
 
 .hover-box {
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: linear-gradient(45deg, var(--surface0), var(--surface2));
   box-shadow: 0 0 1.5rem var(--crust);
 }

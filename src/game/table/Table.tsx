@@ -28,8 +28,8 @@ export default function Table() {
       : "New round";
     field = (
       <div className="table-field cards">
-        {last_play.cards.map((card) => (
-          <Card key={card} card={card} />
+        {last_play.cards.map((card, i) => (
+          <Card key={i} card={card} />
         ))}
       </div>
     );
@@ -44,9 +44,9 @@ export default function Table() {
 
   return (
     <div className="game-table">
-      <Player pos={0} />
-      <Player pos={1} />
-      <Player pos={2} />
+      {[...Array(players.length)].map((_, i) => (
+        <Player pos={i} key={i} />
+      ))}
       <div className="table-center">
         {text && <span className="medium">{text}</span>}
         {field}
@@ -62,22 +62,24 @@ type PlayerProps = {
 function Player({ pos }: PlayerProps) {
   const { players, idx, game } = useGame();
 
-  const i = (pos + (idx || 0)) % 3;
-  if (players.length <= i) {
-    return null;
-  }
+  const i = (pos + (idx || 0)) % players.length;
 
   let indicator;
   if (game) {
     if (i == game.turn) {
       indicator = <TurnIndicator className="turn-indicator" />;
-    } else if ((game.turn + 3 - i) % 3 <= game.passes) {
+    } else if (
+      (game.turn + players.length - i) % players.length <=
+      game.passes
+    ) {
       indicator = <PassIndicator className="pass-indicator" />;
     }
   }
 
   return (
-    <div className={`table-player-${pos} hover-box`}>
+    <div
+      className={`table-player-${pos == players.length - 1 ? "left" : pos == 2 ? "top" : pos} hover-box`}
+    >
       <div className="player-name">
         <div className="indicator">{indicator}</div>
         <b className={`player-${i}`}>{players[i].name}</b>{" "}

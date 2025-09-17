@@ -3,7 +3,6 @@ import "./info.css";
 import { Fragment } from "react";
 import { useParams } from "react-router";
 
-import { display } from "../card/cardUtils";
 import useGame from "../GameContext";
 
 export default function Info() {
@@ -44,7 +43,7 @@ export default function Info() {
             <span>Multiplier:</span>
             <span>{game.mult}x</span>
             <span>Bonus:</span>
-            <span>{display(game.bonus!)}</span>
+            <span>{game.bonus!}</span>
           </div>
         </div>
       )}

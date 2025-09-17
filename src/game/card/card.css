@@ -16,6 +16,11 @@
 .card:hover {
   background: #fff;
 }
+.card-small {
+  width: 3.75rem;
+  height: 5.25rem;
+  font-size: 1.125rem;
+}
 .card-selected {
   transform: translateY(-2rem);
 }
@@ -31,20 +36,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 3rem;
-  padding-top: 0.3rem;
-  padding-right: 0.5rem;
+  margin-right: 2rem;
+  padding-top: 5%;
+  padding-right: 10%;
 }
+
 .card-suit {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 60%;
+  aspect-ratio: 1;
   fill: currentColor;
 }
 
 .joker {
   align-self: center;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 70%;
+  aspect-ratio: 1;
 }
 .small-joker {
   filter: grayscale(100%);

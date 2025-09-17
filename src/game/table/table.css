@@ -3,10 +3,11 @@
   place-self: center;
   display: grid;
   grid-template-areas:
+    ". top ."
     "left center right"
     ". bottom .";
   grid-template-columns: auto 1fr auto;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr auto;
   place-items: center;
   gap: 1.5rem;
 }
@@ -17,7 +18,10 @@
 .table-player-1 {
   grid-area: right;
 }
-.table-player-2 {
+.table-player-top {
+  grid-area: top;
+}
+.table-player-left {
   grid-area: left;
 }
 
@@ -77,7 +81,7 @@
 }
 
 .cards-left {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 .cards-low {
   color: var(--yellow);
