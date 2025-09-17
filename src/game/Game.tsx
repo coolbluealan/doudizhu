@@ -1,6 +1,6 @@
 import "./game.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useParams } from "react-router";
 
 import { LobbyState, Msg, ServerMsg } from "@/types";
@@ -19,10 +19,23 @@ export default function Game() {
 
   const [lobbyState, setLobbyState] = useState(initialLobbyState);
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [error, setError] = useState("");
-  const [reconnect, setReconnect] = useState(false); // toggle to trigger reconnect
+  const [trigger, setTrigger] = useState(false);
 
-  // set state if the loader multiple times
+  const [error, setError] = useState("");
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // display error and clear after 10s
+  function flashError(e: string) {
+    setError(e);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      setError("");
+    }, 10000);
+  }
+
+  // set state if the loader ran multiple times
   // this happens on the transition from spectator to user
   useEffect(() => {
     setLobbyState(initialLobbyState);
@@ -35,7 +48,6 @@ export default function Game() {
       `${protocol}://${window.location.host}/api/lobby/${lobbyCode}/ws`,
     );
     setSocket(ws);
-    setError("");
 
     // handle game state update messages
     ws.onmessage = (e: MessageEvent) => {
@@ -43,22 +55,28 @@ export default function Game() {
       if ("State" in data) {
         setLobbyState(data.State);
       } else if ("Error" in data) {
-        setError(data.Error);
+        flashError(data.Error);
       }
-    };
-
-    // handle reconnection
-    ws.onclose = () => {
-      setTimeout(() => {
-        setError("reconnecting...");
-        setReconnect(!reconnect);
-      }, 1000);
     };
 
     return () => {
       ws.close();
     };
-  }, [lobbyCode, lobbyState.idx, reconnect]);
+  }, [lobbyCode, lobbyState.idx, trigger]);
+
+  // automatic reconnection
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (socket?.readyState !== WebSocket.OPEN) {
+        flashError("connecting...");
+        setTrigger((t) => !t);
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [socket]);
 
   // generate notification
   let msg;
