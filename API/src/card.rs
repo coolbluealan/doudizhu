@@ -4,14 +4,17 @@ use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
 const SUIT_MAP: [&str; 4] = ["♣️", "♦️", "♥️", "♠️"];
-const RANK_MAP: [&str; 14] = [
-    "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "J",
+const RANK_MAP: [&str; 15] = [
+    "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "J", "J",
 ];
 #[derive(Eq, PartialEq, PartialOrd, Ord, Copy, Clone, Debug, Deserialize, Serialize)]
 pub struct Card(usize);
 impl Card {
-    pub fn rank(&self) -> usize {
-        self.0 / 4
+    fn rank(&self) -> usize {
+        match self.0 {
+            53 => 14,
+            _ => self.0 / 4,
+        }
     }
 }
 impl Display for Card {
@@ -79,18 +82,17 @@ impl Serialize for HandType {
     where
         S: serde::Serializer,
     {
-        let name = self.name.to_string();
-        serializer.serialize_str(
-            &(if self.mult > 1 {
-                if self.name == HandName::Single {
-                    "Straight".to_string()
-                } else {
-                    name + " Chained"
-                }
+        let mut name = self.name.to_string();
+        serializer.serialize_str(if self.mult == 1 || self.name == HandName::Bomb {
+            &name
+        } else {
+            if self.name == HandName::Single {
+                "Straight"
             } else {
-                name
-            }),
-        )
+                name += "Chained";
+                &name
+            }
+        })
     }
 }
 
@@ -146,7 +148,8 @@ impl Hand {
 
         let is_valid_chain = |v: &[usize], sz: usize| {
             // note chain cannot include 2
-            v.len() >= sz && v[v.len() - 1] < 12 && v.windows(2).all(|w| w[0] + 1 == w[1])
+            v.len() == 1
+                || (v.len() >= sz && v[v.len() - 1] < 12 && v.windows(2).all(|w| w[0] + 1 == w[1]))
         };
 
         let single = cnts[1].len();
@@ -158,12 +161,8 @@ impl Hand {
         if bomb > 0 {
             if bomb == 1 && trip == 0 {
                 if single == 0 && pair == 0 {
-                    if cnts[4].first().is_some_and(|r| *r == 13) {
-                        hand_type.name = HandName::Rocket;
-                    } else {
-                        hand_type.name = HandName::Bomb;
-                        hand_type.mult = cards.len();
-                    }
+                    hand_type.name = HandName::Bomb;
+                    hand_type.mult = cards.len();
                 } else if players == 3 {
                     if single == 2 && pair == 0 {
                         hand_type.name = HandName::QuadSingle;
@@ -173,8 +172,8 @@ impl Hand {
                 }
             }
         } else if trip > 0 && cnts[3][0] < 13 {
-            hand_type.mult = trip;
-            if hand_type.mult == 1 || is_valid_chain(&cnts[3], 2) {
+            if is_valid_chain(&cnts[3], 2) {
+                hand_type.mult = trip;
                 if single == 0 && pair == 0 {
                     hand_type.name = HandName::Triple;
                 } else if trip == single && pair == 0 && players == 3 {
@@ -184,27 +183,20 @@ impl Hand {
                 }
             }
         } else if pair > 0 {
-            hand_type.mult = pair;
-            if (hand_type.mult == 1 || is_valid_chain(&cnts[2], 3)) && single == 0 {
-                if cards[0].rank() == 13 {
-                    if players == 3 {
-                        hand_type.name = HandName::Rocket
-                    } else if cards[0] == cards[1] {
-                        hand_type.name = HandName::Pair
-                    }
-                } else {
+            if single == 0 {
+                if pair == 2 && cnts[2][0] == 13 {
+                    hand_type.name = HandName::Rocket;
+                } else if is_valid_chain(&cnts[2], 3) {
+                    hand_type.mult = pair;
                     hand_type.name = HandName::Pair
                 }
             }
         } else {
-            hand_type.mult = single;
-            if hand_type.mult == 1 || is_valid_chain(&cnts[1], 5) {
+            if single == 2 && cnts[1][0] == 13 && players == 3 {
+                hand_type.name = HandName::Rocket;
+            } else if is_valid_chain(&cnts[1], 5) {
+                hand_type.mult = single;
                 hand_type.name = HandName::Single;
-
-                // big joker currently has same rank as small joker, so increment rank
-                if cards[0].0 == 53 {
-                    cnts[1][0] = 14;
-                }
             }
         }
 
@@ -383,6 +375,7 @@ mod tests {
         assert_eq!(h.kind.name, HandName::TriplePair);
         assert_eq!(h.kind.mult, 1);
         Hand::new(4, vec![0, 1, 2, 10, 11]).unwrap();
+        Hand::new(4, vec![0, 1, 2, 52, 53]).unwrap_err();
     }
 
     #[test]
@@ -429,6 +422,7 @@ mod tests {
         let h = Hand::new(3, vec![52, 53]).unwrap();
         assert_eq!(h.kind.name, HandName::Rocket);
         assert!(h.is_double(3));
+        Hand::new(4, vec![52, 53]).unwrap_err();
 
         let h = Hand::new(4, vec![52, 52, 53, 53]).unwrap();
         assert_eq!(h.kind.name, HandName::Rocket);

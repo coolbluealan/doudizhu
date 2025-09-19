@@ -171,12 +171,12 @@ impl Game {
         Ok(())
     }
 
+    pub fn landlord_bonus(&self) -> String {
+        card::join(&self.cards[self.players])
+    }
+
     pub fn serialize_cards(&self, idx: usize) -> Value {
-        if idx == self.players {
-            Value::from(card::join(&self.cards[self.players]))
-        } else {
-            serde_json::to_value(&self.cards[idx]).unwrap()
-        }
+        serde_json::to_value(&self.cards[idx]).unwrap()
     }
 
     pub fn serialize(&self) -> Value {
@@ -203,7 +203,7 @@ impl Game {
                 serde_json::to_value(&self.last_play).unwrap(),
             );
             game.insert("landlord".to_string(), Value::from(self.landlord));
-            game.insert("bonus".to_string(), self.serialize_cards(self.players));
+            game.insert("bonus".to_string(), Value::from(self.landlord_bonus()));
         }
 
         // finished

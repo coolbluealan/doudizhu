@@ -148,7 +148,7 @@ impl Lobby {
                     format!(
                         "{} is the landlord! Bonus cards: {}",
                         self.players[self.game.landlord()].name,
-                        self.game.serialize_cards(self.players.len()).to_string(),
+                        self.game.landlord_bonus(),
                     ),
                 );
             }
@@ -175,7 +175,8 @@ impl Lobby {
 
             let landlord = self.game.landlord();
             let mask = self.game.played_mask();
-            let mut delta: i32 = self.game.score_delta().try_into().unwrap();
+            let mut delta = self.game.score_delta() as i32;
+            let mut landlord_delta = delta * self.players.len() as i32;
             if mask < 6 {
                 delta *= 2;
                 self.send_msg(
@@ -191,22 +192,20 @@ impl Lobby {
             if winner == landlord {
                 msg = format!(
                     "The landlord wins +{}. Peasants lose -{}.",
-                    2 * delta,
-                    delta,
+                    landlord_delta, delta
                 );
             } else {
                 msg = format!(
                     "Peasants win +{}. The landlord loses -{}.",
-                    delta,
-                    2 * delta
+                    delta, landlord_delta
                 );
                 delta *= -1;
+                landlord_delta *= -1;
             }
             self.send_msg(9, msg);
 
-            self.players[landlord].score += 2 * delta;
-            self.players[(landlord + 1) % 3].score -= delta;
-            self.players[(landlord + 2) % 3].score -= delta;
+            self.players.iter_mut().for_each(|x| x.score -= delta);
+            self.players[landlord].score += landlord_delta;
 
             self.status = Status::Finished;
         }
