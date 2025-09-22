@@ -85,6 +85,9 @@ impl Lobby {
         if idx >= 4 {
             return Err("lobby is full".into());
         }
+        if self.status == Status::Bidding || self.status == Status::Playing {
+            return Err("game in progress".into());
+        }
 
         // add the user
         self.users.insert(user.id, idx);
@@ -176,7 +179,6 @@ impl Lobby {
             let landlord = self.game.landlord();
             let mask = self.game.played_mask();
             let mut delta = self.game.score_delta() as i32;
-            let mut landlord_delta = delta * self.players.len() as i32;
             if mask < 6 {
                 delta *= 2;
                 self.send_msg(
@@ -187,6 +189,7 @@ impl Lobby {
                     ),
                 );
             }
+            let mut landlord_delta = delta * (self.players.len() - 1) as i32;
 
             let msg;
             if winner == landlord {
@@ -205,7 +208,7 @@ impl Lobby {
             self.send_msg(9, msg);
 
             self.players.iter_mut().for_each(|x| x.score -= delta);
-            self.players[landlord].score += landlord_delta;
+            self.players[landlord].score += landlord_delta + delta;
 
             self.status = Status::Finished;
         }
@@ -270,7 +273,7 @@ impl Lobby {
 
     pub fn serialize_idx(&self, mut state: Value, idx: usize) -> Value {
         state["idx"] = Value::from(idx);
-        if self.status != Status::Lobby {
+        if self.status != Status::Lobby && idx < self.game.players() {
             state["hand"] = self.game.serialize_cards(idx);
         }
         state

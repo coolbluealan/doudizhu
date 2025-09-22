@@ -34,6 +34,9 @@ impl Game {
     }
 
     // getter functions
+    pub fn players(&self) -> usize {
+        self.players
+    }
     pub fn landlord(&self) -> usize {
         self.landlord
     }

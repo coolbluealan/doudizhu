@@ -29,7 +29,7 @@ export default function Table() {
     field = (
       <div className="table-field cards">
         {last_play.cards.map((card, i) => (
-          <Card key={i} card={card} />
+          <Card key={i} card={card} small={last_play.cards.length > 12} />
         ))}
       </div>
     );

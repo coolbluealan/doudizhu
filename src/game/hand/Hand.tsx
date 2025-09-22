@@ -1,6 +1,6 @@
 import "./hand.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router";
 
 import FormError from "@/FormError";
@@ -26,6 +26,11 @@ export default function Hand({ hand }: HandProps) {
     });
   }
 
+  function clearHand() {
+    setSelected(new Array(hand.length).fill(false));
+  }
+  useEffect(clearHand, [hand.length]);
+
   return (
     <>
       <div className="game-hand cards">
@@ -42,11 +47,7 @@ export default function Hand({ hand }: HandProps) {
           />
         ))}
       </div>
-      <Actions
-        hand={hand}
-        selected={selected}
-        clearHand={() => setSelected(new Array(hand.length).fill(false))}
-      />
+      <Actions hand={hand} selected={selected} clearHand={clearHand} />
     </>
   );
 }
@@ -63,7 +64,7 @@ function Actions({ hand, selected, clearHand }: ActionsProps) {
   const { status, players, idx, game, socket } = useGame();
 
   if (idx == undefined) {
-    if (status == "Lobby" && players.length < 4) {
+    if ((status == "Lobby" || status == "Finished") && players.length < 4) {
       return (
         <div className="game-actions">
           <Form action="/" method="POST">
@@ -139,7 +140,6 @@ function Actions({ hand, selected, clearHand }: ActionsProps) {
           className="btn-primary"
           onClick={() => {
             play(hand.filter((_, i) => selected[i]));
-            clearHand();
           }}
           disabled={notTurn || !selected.includes(true)}
         >

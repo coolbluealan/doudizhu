@@ -89,7 +89,7 @@ impl Serialize for HandType {
             if self.name == HandName::Single {
                 "Straight"
             } else {
-                name += "Chained";
+                name += " Chained";
                 &name
             }
         })
