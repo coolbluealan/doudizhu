@@ -3,7 +3,7 @@
 Backend:
 
 - [axum](https://github.com/tokio-rs/axum) for web framework
-- [Shuttle](https://www.shuttle.dev/) for deployment
+- [Render](https://render.com/) for deployment
 
 Frontend:
 

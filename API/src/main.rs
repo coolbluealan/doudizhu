@@ -31,8 +31,8 @@ mod lobby;
 use app::{AppError, AppState, LobbyIdx, LobbyRef, SendApp, User};
 use lobby::{ClientMsg, ServerMsg};
 
-#[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+#[tokio::main]
+async fn main() {
     // routes specific to a lobby
     let lobby_router = Router::new()
         .route("/", get(lobby_state))
@@ -60,7 +60,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .fallback_service(ServeDir::new("dist").fallback(ServeFile::new("dist/index.html")))
         .layer(CompressionLayer::new());
 
-    Ok(router.into())
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
+    axum::serve(listener, router).await.unwrap();
 }
 
 #[derive(Deserialize)]
