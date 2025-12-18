@@ -33,6 +33,8 @@ use lobby::{ClientMsg, ServerMsg};
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     // routes specific to a lobby
     let lobby_router = Router::new()
         .route("/", get(lobby_state))
