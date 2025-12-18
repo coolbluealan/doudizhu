@@ -1,16 +1,9 @@
-import {
-  redirect,
-  unstable_createContext,
-  unstable_MiddlewareFunction,
-} from "react-router";
+import { createContext, MiddlewareFunction, redirect } from "react-router";
 
 // empty string means logged out
-export const userContext = unstable_createContext<string>("");
+export const userContext = createContext<string>("");
 
-const authMiddleware: unstable_MiddlewareFunction = async ({
-  request,
-  context,
-}) => {
+const authMiddleware: MiddlewareFunction = async ({ request, context }) => {
   // authenticated
   if (context.get(userContext)) return;
 

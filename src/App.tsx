@@ -26,7 +26,7 @@ const router = createBrowserRouter([
         action: logoutAction,
       },
       {
-        unstable_middleware: [authMiddleware],
+        middleware: [authMiddleware],
         loader: loadUser,
         element: <UserLayout />,
         children: [

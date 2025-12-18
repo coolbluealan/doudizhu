@@ -1,7 +1,7 @@
 import {
   ActionFunctionArgs,
   redirect,
-  unstable_RouterContextProvider,
+  RouterContextProvider,
 } from "react-router";
 
 import { userContext } from "./authMiddleware";
@@ -31,7 +31,7 @@ export async function loginAction({ request }: ActionFunctionArgs) {
 
 export async function logoutAction({
   context,
-}: ActionFunctionArgs<unstable_RouterContextProvider>) {
+}: ActionFunctionArgs<RouterContextProvider>) {
   context.set(userContext, "");
   await fetch("/api/logout", {
     method: "POST",
